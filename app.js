@@ -18,25 +18,46 @@ import Smart from 'react-native-smartconfig';
 
 var wifi = require('react-native-android-wifi')
 
-export default class Smartconfig extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
+var MainApp = React.createClass({
+  getInitialState: function () {
+    // console.disableYellowBox = true;
+
+    if (Platform.OS === 'android') {
+      wifi.isEnabled((isEnabled) => {
+        if (isEnabled) {
+          console.log("wifi service enabled");
+        } else {
+          Alert.alert(
+            'Wifi is dissable',
+            'Do you want to enable Wifi?',
+            [
+              { text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel' },
+              { text: 'OK', onPress: () => wifi.setEnabled(true) },
+            ],
+            { cancelable: false }
+          )
+        }
+      })
+    }
+    NetworkInfo.getSSID(ssid => {
+      this.setState({ ssid: ssid });
+    });
+
+    // connect the client
+
+    return {
+      modalVisible: false,
+      isSmart: false,
       ssid: '',
       pass: '',
-      text: '',
       btnLabel: 'Submit',
-      isSmart: false,
-      modalVisible: false,
-    }
-    this.enableWifi = this.enableWifi.bind(this)
-    this.smartConfig = this.smartConfig.bind(this)
-  }
-
-  smartConfig = function (){
+    };
+  },
+  
+  smartConfig(){
     if (this.state.isSmart) {
       console.log('stop');
-      Smartconfig.stop();
+      Smart.stop();
       this.setState({ modalVisible: false, isSmart: false, btnLabel: 'Submit' });
       return;
     }
@@ -44,7 +65,7 @@ export default class Smartconfig extends Component {
     this.setState({ modalVisible: true, isSmart: true, btnLabel: 'Cancel' });
     this.setState({ isSmart: true });
     var self = this;
-    Smartconfig.start({  
+    Smart.start({  
       type: 'esptouch',
       ssid: this.state.ssid,
       bssid: '', //"" if not need to filter (don't use null)
@@ -63,35 +84,8 @@ export default class Smartconfig extends Component {
     }).catch(function (error) {
 
     });
-  }
+  },
 
-  enableWifi() {
-    Alert.alert(
-      'Wifi is dissable',
-      'Do you want to enable Wifi?',
-      [
-        { text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel' },
-        { text: 'OK', onPress: () => wifi.setEnabled(true) },
-      ],
-      { cancelable: false }
-    )
-  }
-
-  componentWillMount() {
-    if (Platform.OS === 'android') {
-      wifi.isEnabled((isEnabled) => {
-        if (isEnabled) {
-          console.log("wifi service enabled");
-        } else {
-          this.enableWifi()
-        }
-      })
-    }
-    NetworkInfo.getSSID(ssid => {
-      console.log(ssid);
-      this.setState({ssid})
-    });
-  }
   render() {
     var enable = false;
     return (
@@ -143,7 +137,59 @@ export default class Smartconfig extends Component {
       </View>
     );
   }
+})
+
+export default class Smartconfig extends Component {
+  
+  // constructor(props) {
+  //   super(props)
+  //   this.state = {
+  //     ssid: '',
+  //     pass: '',
+  //     text: '',
+  //     btnLabel: 'Submit',
+  //     isSmart: false,
+  //     modalVisible: false,
+  //   }
+  //   this.enableWifi = this.enableWifi.bind(this)
+  // }
+  
+  // enableWifi() {
+  //   Alert.alert(
+  //     'Wifi is dissable',
+  //     'Do you want to enable Wifi?',
+  //     [
+  //       { text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel' },
+  //       { text: 'OK', onPress: () => wifi.setEnabled(true) },
+  //     ],
+  //     { cancelable: false }
+  //   )
+  // }
+
+  // componentWillMount() {
+  //   if (Platform.OS === 'android') {
+  //     wifi.isEnabled((isEnabled) => {
+  //       if (isEnabled) {
+  //         console.log("wifi service enabled");
+  //       } else {
+  //         this.enableWifi.bind(this)
+  //       }
+  //     })
+  //   }
+  // }
+  componentWillReceiveProps(nextProps) {
+  // You don't have to do this check first, but it can help prevent an unneeded render
+  if (nextProps.ssid !== this.state.ssid) {
+    this.setState({ ssid: nextProps.ssid });
+  }
 }
+  render(){
+    return(
+      <MainApp />
+    )
+  }
+}
+
 
 const styles = StyleSheet.create({
   container: {
